@@ -1,0 +1,209 @@
+
+=============
+= Workflows =
+=============
+
+Olá gente, hoje a gente vai falar de alguns workflows pra git.
+Bom, sem querer beat around the bush aqui, simplesmente apresentar esse assunto é meio chato
+No fundo no fundo a gente está falando num jeito de trabalhar que a gente impõe em nós mesmos, então mesmo o tema sendo meio meh, a discussão vai ser bem interessante e útil -- porque isso afeta a gente diretamente no final das contas.
+
+Agora, o meu objetivo aqui é simplesmente mostrar um jeito que isso é feito por aí afora, e os porquês. A gente também vai ver por que que muitas empresas preferem não se meter nisso aqui, e por que que o nosso jeito consegue ser até mais complicado.
+
+
+
+======================
+= Back to the basics =
+======================
+
+Quando a gente aprende git, ele é uma coisa relativamente fácil. A gente não se preocupa com branches e usa ele basicamente como um meio de fazer versões e backups. Esse jeito de trabalhar é o workflow básico do git, que já é útil pra muita coisa:
+
+* Workflow básico.
+    - já vem integrado no git
+    - baseado em git pull & git push apenas
+    - work -> commit -> pull -> push
+
+E isso, na verdade, funciona incrivelmente bem. É bem provável inclusive que muita gente daqui já trabalhou desse jeito, inclusive em grupos, e só teve dificuldades uma vez ou outra na hora de um merge conflict. Então, com isso em mente, quais são os problemas desse workflow, e por que que a gente não usa ele hoje?
+
+> possíveis respostas:
+    - trabalhar com muita gente
+        => realmente, se o número de pessoas trabalhando no mesmo projeto crescer demais, isso vira um problema mesmo. Mais motivos?
+    - evitar conflitos
+        => acho que o problema não é exatamente os conflitos em si, é mais que eles podem acontecer constantemente. Se tem 2 pessoas trabalhando nos mesmos pedaços de um arquivo, vira um inferno.
+    - separar features bem
+        => yup, features ficam misturadas desse jeito. O que nos leva a:
+    - difícil de integrar com uma ferramenta de CI / CD
+        => sim. Falta constância nisso daqui, o que faz ser difícil de integrar com alguma coisa do tipo CD. Mais sobre isso mais tarde.
+    - controlar acesso
+        => sim, a rigor se tá todo mundo commitando pro mesmo repo na mesma branch é meio difícil de controlar acesso mesmo. Esse é bem fácil de resolver, more on that soon.
+    - evitar deadlocks
+        => same as evitar conflitos.
+    - dificulta revisão
+        => efeito colateral do features misturadas / problemas de integração com CI e CD.
+    - roles diferentes trabalhando ao msm tempo
+        => sim. Histórico não-organizado significa que é difícil digamos QA chegar e pegar o commit certo.
+    - não se encaixa no scrum
+        => ...não! Na verdade isso se encaixa muito bem na real com metodologias ágeis. Uma característica delas é que as reuniões são com todo mundo ao mesmo tempo, in fact, o único problema de um workflow desses para metodologias ágeis é que é difícil de instrumentar.
+    - o histórico fica uma zona
+        => yup. E isso faz manter o código no futuro ser mais difícil. Existem ferramentas pra melhorar isso though, e a escala onde ela faz ficar difícil na verdade é bem longa. (pense TP, não Jogo)
+    - trabalhos multi-parte ficam mais difíceis
+        => why? (deve cair em separação de features). Por enquanto não causa problema, mas pode conflitar com "soluções" que a gente coloca mais pra frente. More on this later.
+
+
+
+=======================
+= Working to git-flow =
+=======================
+
+> Vários problemas de estabilidade e organização apareceram, let's go all the way e ver os jeitos que a gente costuma adotar pra organizar mais o trabalho:
+
+* stable master / dev branch
+    - trabalho acontece numa branch de desenvolvimento.
+    - a idéia é fazer a master ser sempre estável ou estar sempre pronta para publicar.
+
+* Branches-tópico
+    - features novas vão cada uma em sua própria branch.
+    - integradas na branch de desenvolvimento por um integrador designado.
+
+
+1o, stable master:
+Isso dá uma separação instável vs. instável que permite uma certa instrumentação.
+Enables:
+    - controle de acesso (qualquer indireção já dá isso)
+    - revisão por push
+    - builds estáveis mais ágeis e organizadas -- does it? e quanto a testes?
+    - histórico mais legível -- quão útil é isso?
+    - custo: praticamente nulo -- e quanto a treinar outras pessoas? -- e quanto ao problema de ter que ensinar o que são branches pra todo mundo?
+
+    => ponto importante: qqr coisa maior que o workflow básico requer conhecimento bom de branches -- não é óbvio para todo mundo, principalmente quem não mexe com dev.
+
+
+2o, topic branches:
+Proporciona ótima separação de trabalho, e muita instrumentação
+Enables:
+    - testes de features
+    - revisão por-feature
+    - testes de integração
+    - por extensão : continuous delivery
+    - na real não reduz muito os problemas de conflito, mas tira os piores casos se usado direito
+    - mas dependências entre features criam branch hell.
+    - custo: baixo se evitar branch hell. Senão, pode ser altissimo.
+
+
+<MOSTRAR BRANCH HELL>
+
+
+> e quando você tem os dois juntos, você pode até:
+
+* Branches-tópico com rebase mandatório
+    - mesmo que o anterior, mas facilita merges e deixa o histórico mais limpo
+    - tem overhead considerável, principalmente se tiver mais gente trabalhando na feature. Se a feature for grande, pode precisar de um fork pra ela
+
+
+<tangente: forks>
+Basicamente tudo que a gente separa por branch a gente pode separar por fork tb. O que isso faz é reduzir o management de branches do repo principal, além de ser mais direto o management de acesso (não passa por naming conventions de branches).
+O custo que isso traz é... well, montes de forks pra todo lado! É mais difícil de compartilhar código de uma pessoa específica, o que significa que também fica mais difícil de buildar essas coisas num sistema atomático.
+
+O foco desse talk é chegar no Git-flow, então vou ignorar os forks por enquanto. Em geral eles se encaixam facilmente. Por exemplo, com um pouco de trickery de config do git dá pra fazer um workflow básico + forks que se opera exatamente do mesmo jeito : hack > commit > pull > push.
+
+
+DISCUSSÃO > o que ainda falta?
+
+- Ainda não sabemos como lidar com o feature dependency hell
+- Como integrar com um sistema de build como o nosso - builders complexos off-site
+- Como integrar com um método de produção que nem o nosso - loops de desenvolvimento longos
+
+
+* Feature-freeze branches, ou "release candidates"
+    - branch de release para a qual nenhuma feature a mais pode ser mergeada.
+    - apenas bugfixes podem ser pushados para essa branch
+
+Basicamente a idéia é que realmente não existe um jeito melhor de lidar com as features a não ser isolá-las e só integrá-las de uma vez em um pacote grande na hora de um "release". Claro, isso só faz sentido para projetos que têm uma noção de "release". Mas essa noção permite, i.e. que um time de QA consiga fazer um teste geral com algo sólido. Afinal, a integração de features tem que ser testada tb.
+
+
+Alternativas p/ resolver isso?
+
+* Feature releases diretos (não é parte do git-flow)
+    - quando uma feature entra nos estágios finais, mergeamos a dev no estado que ela está para a branch da feature
+    - a partir daí essa feature está num estado de release, e o teste de integração dessa feature garante que a feature era integrável até esse ponto
+    - conflita um pouco com rebases (tem que ser feito na hora do freeze)
+
+
+DISCUSSÃO
+
+
+A gente falou um pouco de como lidar com fixes em features, mas não de fixes emergenciais em produção. Basicamente a idéia é que eles precisam ser ágeis (direto na branch estável), pequenos, e testados na hora:
+
+* Hotfixes
+    - branch direto da master, e são mergeados na master ao ser testados.
+    - podem ser mergeados em features.
+
+
+E com essas coisas mais um pouco de versionamento automático conveniente, e a gente basicamente chegou no git-flow:
+
+<review no gráfico do git-flow as coisas que passamos>
+
+
+https://github.com/nvie/gitflow
+https://github.com/bobthecow/git-flow-completion
+
+revisando,
+    - git flow init (interativo)
+
+    - git flow feature start <name> [base]
+    - git flow feature pull <name>
+    - git flow feature finish <name>
+
+    - git flow release start
+    - git flow release pull
+    - git flow release finish
+
+    - git flow hotfix start
+    - git flow hotfix pull
+    - git flow hotfix finish
+
+
+
+============
+= Críticas =
+============
+
+Basicamente : "muito burocrático!"
+
+Imagina que cada funcionário precisa basicamente passar por uma apresentação dessas pra entender como funciona o nosso workflow! Agora imagina não-devs que não costumam ter tanta familiaridade com o git fazendo isso. Imagina o qq acontece quando alguém faz um comando errado. Mais que isso, em geral não é legal o workflow entrar no meio do caminho de trabalho sendo feito.
+
+Mais que isso, a idéia de feature-freeze e de releases não combina muito bem com filosofias de Deployment Contínuo, Fail fast, etc...
+
+Uma reação possível é o "github flow" que o github usa para desenvolver os produtos deles. É basicamente feature branches revisão de código e só.
+
+> feature branch pra trabalhar
+> pull request p/ testes (inclusive automáticos) e revisões de código
+> quando todos os envolvidos (inclusive o autor) aprovam: merge
+> mergeou? Deploy.
+
+
+
+======================
+= O quê fazemos hoje =
+======================
+
+O nosso fluxo hoje é meio que um git-flow
+- branch master "production-ready", associada à pipeline principal no Go CD
+- branch dev, associada a uma pipeline configurável no Go CD
+- branches tópico, para features
+- hotfixes
+
+A gente também usa forks extesivamente - tem um for por pessoa em geral, com possivelmente numerosas branches
+
+Na Live depende do projeto, mas em geral nós trabalhamos com épico / tópico / master, e isso as vezes vira um problema (branch hell)
+
+Também tem a questão da proliferação de builders.... mas isso a gente fala sobre outro dia ;)
+
+
+<DISCUSSÃO>
+
+
+=============
+= Conclusão =
+=============
+
+Who knows que conclusão vamos chegar?
