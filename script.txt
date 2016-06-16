@@ -201,9 +201,20 @@ Também tem a questão da proliferação de builders.... mas isso a gente fala s
 
 <DISCUSSÃO>
 
+========================
+= Workflow alternativo =
+========================
+
+* brocoliflow
+    - Feature branches
+    - Pull requests estilo GitHub Flow
+    - Builds toda vez que uma branch com um certo prefixo i.e. feature/ é pushada
+    - merge master -> feature indica um teste de integração. Can't merge back to master se o último commit não for isso
+    - merge feature -> master indica uma release da feature, e bump de version codes.
+
 
 =============
 = Conclusão =
 =============
 
-Who knows que conclusão vamos chegar?
+Who knows?
